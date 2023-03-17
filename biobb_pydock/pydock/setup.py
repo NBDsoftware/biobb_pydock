@@ -118,7 +118,7 @@ class Setup(BiobbObject):
             self.output_ini_path = str(Path(self.container_volume_path).joinpath(Path(self.output_ini_path).name))
 
         # Create command line
-        self.cmd = [self.binary_path, self.properties['docking_name'], 'setup']
+        self.cmd = [self.binary_path, self.docking_name, 'setup']
 
         # 8. Uncomment to check the command line 
         print(' '.join(self.cmd))
