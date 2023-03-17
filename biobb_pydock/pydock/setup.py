@@ -25,8 +25,8 @@ class Setup(BiobbObject):
         output_ligand_path (str) (Optional): Ligand PDB file with the correct chain name adapted for pyDock ftdock or zdock. 'docking_name'_lig.pdb by default. File type: output. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
         properties (dic):
             * **docking_name** (*str*) - ("docking_name") Name for the docking.
-            * **receptor** (*dict*) - ("{}") Original and new chain names for receptor protein.
-            * **ligand** (*dict*) - ("{}") Original and new chain names for ligand protein.
+            * **receptor** (*dict*) - ("{}") Receptor dictionary with "mol" (chain name of receptor in input_receptor_path) and "newmol" (new chain name of receptor in output_receptor_path). Do not include "pdb" file here.
+            * **ligand** (*dict*) - ("{}") Ligand dictionary with "mol" (chain name of ligand in input_ligand_path) and "newmol" (new chain name of ligand in output_ligand_path, different from receptor "newmol"). Do not include "pdb" file here.
             * **binary_path** (*str*) - ("pyDock3") Path to the pyDock executable binary.
             * **remove_tmp** (*bool*) - (True) [WF property] Remove temporal files.
             * **restart** (*bool*) - (False) [WF property] Do not execute if output files exist.
@@ -84,9 +84,9 @@ class Setup(BiobbObject):
         # Properties specific for BB
         self.receptor = properties.get('receptor', {'mol': 'A','newmol': 'A'})
         self.ligand = properties.get('ligand', {'mol': 'A','newmol': 'B'})
-        self.output_ini_path = properties.get('output_ini_path', f'{self.docking_name}.ini')
+        self.ini_file_name = f'{self.docking_name}.ini'
 
-        # Save external user-defined paths in properties (only the ones that will be modified)
+        # Save external user-defined paths in properties (only those that need "docking_name" in their file name)
         self.original_output_paths = {'output_receptor_path': output_receptor_path, 'output_ligand_path': output_ligand_path }
 
         # Input/Output files with correct output paths (pyDock makes assumptions about the file names)
@@ -108,20 +108,23 @@ class Setup(BiobbObject):
         if self.check_restart(): return 0
         self.stage_files()
 
-        # Create INI file in stage unique_dir 
-        self.output_ini_path = create_ini(output_ini_path = str(Path(self.stage_io_dict.get("unique_dir")).joinpath(self.output_ini_path)),
-                                          receptor = self.receptor, receptor_pdb=Path(self.stage_io_dict["in"].get("input_receptor_path")).name,
-                                          ligand = self.ligand, ligand_pdb=Path(self.stage_io_dict["in"].get("input_lig_path")).name)
-
-        # stage unique_dir is mounted in the container volume path (NOTE: needed?)
+        # Find input/output path
         if self.container_path:
-            self.output_ini_path = str(Path(self.container_volume_path).joinpath(Path(self.output_ini_path).name))
+            io_path = self.container_volume_path
+        else:
+            io_path = self.stage_io_dict.get("unique_dir")
+
+        # Create command path: /path/to/inputs/and/outputs + /docking_name
+        cmd_path = str(Path(io_path).joinpath(self.docking_name))
+
+        # Create INI file for pyDock setup
+        create_ini(output_ini_path = str(Path(self.stage_io_dict.get("unique_dir")).joinpath(self.ini_file_name)),
+                   receptor = self.receptor, receptor_pdb=Path(self.stage_io_dict["in"].get("input_receptor_path")).name,
+                   ligand = self.ligand, ligand_pdb=Path(self.stage_io_dict["in"].get("input_lig_path")).name,
+                   io_path = io_path)
 
         # Create command line
-        self.cmd = [self.binary_path, self.docking_name, 'setup']
-
-        # 8. Uncomment to check the command line 
-        print(' '.join(self.cmd))
+        self.cmd = [self.binary_path, cmd_path, 'setup']
 
         # Run Biobb block
         self.run_biobb()
@@ -134,7 +137,7 @@ class Setup(BiobbObject):
             if Path(self.io_dict["out"][file_ref]).exists():
                 shutil.move(self.io_dict["out"][file_ref], original_output_path)
 
-        # Remove temporal files
+        # Remove temporal files NOTE: it would be nice to output the ini file?
         self.tmp_files.append(self.stage_io_dict.get("unique_dir"))
         self.remove_tmp_files()
 
