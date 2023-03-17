@@ -79,7 +79,7 @@ class Setup(BiobbObject):
 
         # Properties common to all PyDock BB
         self.docking_name = properties.get('docking_name', 'docking_name')
-        self.binary_path = properties.get('binary_path', 'pydock3')
+        self.binary_path = properties.get('binary_path', 'pydock3') 
 
         # Properties specific for BB
         self.receptor = properties.get('receptor', {'mol': 'A','newmol': 'A'})
@@ -108,12 +108,12 @@ class Setup(BiobbObject):
         if self.check_restart(): return 0
         self.stage_files()
 
-        # Create INI file
+        # Create INI file in stage unique_dir 
         self.output_ini_path = create_ini(output_ini_path = str(Path(self.stage_io_dict.get("unique_dir")).joinpath(self.output_ini_path)),
-                                          receptor = self.receptor, receptor_pdb=Path(self.stage_io_dict.get("input_receptor_path")).name,
-                                          ligand = self.ligand, ligand_pdb=Path(self.stage_io_dict.get("input_lig_path")).name)
+                                          receptor = self.receptor, receptor_pdb=Path(self.stage_io_dict["in"].get("input_receptor_path")).name,
+                                          ligand = self.ligand, ligand_pdb=Path(self.stage_io_dict["in"].get("input_lig_path")).name)
 
-        # Copy INI file to container
+        # stage unique_dir is mounted in the container volume path (NOTE: needed?)
         if self.container_path:
             self.output_ini_path = str(Path(self.container_volume_path).joinpath(Path(self.output_ini_path).name))
 
@@ -130,9 +130,9 @@ class Setup(BiobbObject):
         self.copy_to_host()
 
         # Rename output files using the user-defined external paths
-        for file_ref, original_file_path in self.original_output_paths.items():
+        for file_ref, original_output_path in self.original_output_paths.items():
             if Path(self.io_dict["out"][file_ref]).exists():
-                shutil.copy2(self.io_dict["out"][file_ref], original_file_path)
+                shutil.move(self.io_dict["out"][file_ref], original_output_path)
 
         # Remove temporal files
         self.tmp_files.append(self.stage_io_dict.get("unique_dir"))
