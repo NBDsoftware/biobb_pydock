@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
 """Module containing the Setup class and the command line interface."""
-import argparse
 import shutil
+import argparse
 from pathlib import Path
 from biobb_common.generic.biobb_object import BiobbObject
 from biobb_common.configuration import  settings
-from biobb_common.tools import file_utils as fu
 from biobb_common.tools.file_utils import launchlogger
 from biobb_pydock.pydock.common import create_ini
 
@@ -132,12 +131,10 @@ class Setup(BiobbObject):
         # Copy files to host
         self.copy_to_host()
 
-        # Rename output files using the user-defined external paths
-        for file_ref, original_output_path in self.original_output_paths.items():
-            if Path(self.io_dict["out"][file_ref]).exists():
-                shutil.move(self.io_dict["out"][file_ref], original_output_path)
+        # Rename output files 
+        self.rename_output_files()
 
-        # Remove temporal files NOTE: it would be nice to output the ini file?
+        # Remove temporal files 
         self.tmp_files.append(self.stage_io_dict.get("unique_dir"))
         self.remove_tmp_files()
 
@@ -145,6 +142,12 @@ class Setup(BiobbObject):
         self.check_arguments(output_files_created=True, raise_exception=False)
 
         return self.return_code
+    
+    def rename_output_files(self):
+        """Rename output files using the user-defined external paths."""
+        for file_ref, original_output_path in self.original_output_paths.items():
+            if Path(self.io_dict["out"][file_ref]).exists():
+                shutil.move(self.io_dict["out"][file_ref], original_output_path)
 
 def setup(input_receptor_path: str, input_lig_path: str, output_receptor_path: str = None, output_ligand_path: str = None, properties: dict = None, **kwargs) -> int:
     """Create :class:`Setup <pydock.setup.Setup>` class and
