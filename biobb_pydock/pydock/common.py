@@ -40,4 +40,4 @@ def write_ini(output_ini_path: str, ini_lines: list) -> None:
         for line in ini_lines:
             ini_file.write(line + '\n')
     
-    return
+    return output_ini_path
