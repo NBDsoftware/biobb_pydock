@@ -48,3 +48,10 @@ def rename_files(source_paths: Mapping[str, str] , destination_paths: Mapping[st
     for file_ref, destination_path in destination_paths.items():
         if Path(source_paths[file_ref]).exists():
             shutil.move(source_paths[file_ref], destination_path)
+    
+def copy_files(source_paths: Mapping[str, str] , destination_paths: Mapping[str, str]):
+    """Copy files in source_paths using the destination_paths."""
+
+    for file_ref, destination_path in destination_paths.items():
+        if Path(source_paths[file_ref]).exists():
+            shutil.copy(source_paths[file_ref], destination_path)
