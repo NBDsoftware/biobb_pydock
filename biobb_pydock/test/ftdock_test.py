@@ -17,7 +17,7 @@ prop = {
     'container_working_dir': container_working_dir,
     'container_generic_command': container_generic_command}
    
-ftdock(input_receptor_path=input_receptor_path,
+ftdock(input_rec_path=input_receptor_path,
     input_lig_path=input_lig_path,
     output_ftdock_path='ftdock_output.ftdock',
     output_rot_path='rotftdock_output.rot',

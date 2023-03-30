@@ -3,6 +3,7 @@
 """Module containing the Ftdock class and the command line interface."""
 import argparse
 from pathlib import Path
+from biobb_common.tools import file_utils as fu
 from biobb_common.generic.biobb_object import BiobbObject
 from biobb_common.configuration import  settings
 from biobb_common.tools.file_utils import launchlogger
@@ -18,7 +19,7 @@ class Ftdock(BiobbObject):
     | The pyDock rotftdock module is used to generate the transformation matrix for all the docking poses.
 
     Args:
-        input_receptor_path (str): Prepared receptor PDB file with pydock setup (the largest of the two proteins). File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
+        input_rec_path (str): Prepared receptor PDB file with pydock setup (the largest of the two proteins). File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
         input_lig_path (str): Prepared ligand PDB file with pydock setup (will be rotated and translated). File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
         output_ftdock_path (str): File with docking poses expressed as a translation vector and 3 rotation angles. File type: output. `Sample file <>`_. Accepted formats:  (edam:).
         output_rot_path (str): File containing the transformation matrix for all the docking poses. File type: output. `Sample file <>`_. Accepted formats:  (edam:).
@@ -42,10 +43,10 @@ class Ftdock(BiobbObject):
             prop = { 
                 'docking_name': 'docking_name'}
 
-            ftdock(input_receptor_path='/path/to/my/Receptor/prepared_receptor.pdb',
-                  input_lig_path='/path/to/my/Ligand/prepared_ligand.pdb',
-                  output_ftdock_path='/path/to/new/docking/positions/dock_poses.ftdock',
-                  output_rot_path='/path/to/poses_matrix.rot',
+            ftdock(input_rec_path='prepared_receptor.pdb',
+                  input_lig_path='prepared_ligand.pdb',
+                  output_ftdock_path='dock_poses.ftdock',
+                  output_rot_path='poses_matrix.rot',
                   properties=prop)
 
     Info:
@@ -60,7 +61,7 @@ class Ftdock(BiobbObject):
     """
 
     # Adapt input and output file paths as required. Include all files, even optional ones
-    def __init__(self, input_receptor_path: str, input_lig_path: str, output_ftdock_path: str,
+    def __init__(self, input_rec_path: str, input_lig_path: str, output_ftdock_path: str,
                  output_rot_path: str, properties: dict = None, **kwargs) -> None:
         properties = properties or {}
 
@@ -72,18 +73,15 @@ class Ftdock(BiobbObject):
         self.docking_name = properties.get('docking_name', 'docking_name')
         self.binary_path = properties.get('binary_path', 'pydock3') 
 
-        # Save external user-defined paths in properties (only those that need "docking_name" in their file name)
-        self.external_input_paths = {'input_receptor_path': input_receptor_path, 'input_lig_path': input_lig_path}
+        # Save EXTERNAL filenames (only those that need self.docking_name in their file name)
+        self.external_input_paths = {'input_rec_path': input_rec_path, 'input_lig_path': input_lig_path}
         self.external_output_paths = {'output_ftdock_path': output_ftdock_path, 'output_rot_path': output_rot_path}
 
-        # Input/Output files 
+        # Input/Output files (INTERNAL filenames)
         self.io_dict = { 
-            'in': { 'input_receptor_path': f'{self.docking_name}_rec.pdb', 'input_lig_path': f'{self.docking_name}_lig.pdb' }, 
+            'in': { 'input_rec_path': f'{self.docking_name}_rec.pdb', 'input_lig_path': f'{self.docking_name}_lig.pdb' }, 
             'out': { 'output_ftdock_path': f'{self.docking_name}.ftdock', 'output_rot_path': f'{self.docking_name}.rot'} 
         }
-
-        # Copy input files to stage them with correct names
-        copy_files(source_paths = self.external_input_paths, destination_paths = self.io_dict["in"])
         
         # Check the properties
         self.check_properties(properties)
@@ -96,9 +94,13 @@ class Ftdock(BiobbObject):
         
         # Ftdock Biobb
         if self.check_restart(): return 0
+
+        # Rename input files, EXTERNAL -> INTERNAL
+        renaming_dir = self.renaming_stage()
+        # Stage files with correct names 
         self.stage_files()
 
-        # Create ftdock command path: /path/to/inputs + /docking_name
+        # Create ftdock command path: /relative/path/to/inputs/from/working/dir + /docking_name
         if self.container_path:
             ftdock_path = str(Path(self.container_volume_path).joinpath(self.docking_name)) 
         else:
@@ -116,24 +118,39 @@ class Ftdock(BiobbObject):
         # Copy files to host
         self.copy_to_host()
 
-        # Rename output files 
+        # Rename output files, INTERNAL -> EXTERNAL
         rename_files(source_paths = self.io_dict["out"], destination_paths = self.external_output_paths)
 
         # Remove temporal files
         self.tmp_files.append(self.stage_io_dict.get("unique_dir"))
-        self.tmp_files.extend(list(self.io_dict['in'].values()))     # Add duplicated input files
+        self.tmp_files.append(renaming_dir)       
         self.remove_tmp_files()
 
         # Check output arguments
         self.check_arguments(output_files_created=True, raise_exception=False)
 
         return self.return_code
+    
+    def renaming_stage(self) -> str: 
+        """Initial stage to rename files and respect pyDock convention regarding filenames."""
 
-def ftdock(input_receptor_path: str, input_lig_path: str, output_ftdock_path: str, output_rot_path: str, properties: dict = None, **kwargs) -> int:
+        renaming_dir = str(Path(fu.create_unique_dir()).resolve())
+
+        # IN files, add renaming_dir to correct file names in io_dict["in"]
+        for file_ref, file_path in self.io_dict["in"].items():
+            if file_path:
+                self.io_dict["in"][file_ref] = str(Path(renaming_dir).joinpath(Path(file_path).name))
+        
+        # Copy external input files to unique dir with correct names
+        copy_files(source_paths = self.external_input_paths, destination_paths = self.io_dict["in"])
+
+        return renaming_dir
+
+def ftdock(input_rec_path: str, input_lig_path: str, output_ftdock_path: str, output_rot_path: str, properties: dict = None, **kwargs) -> int:
     """Create :class:`Ftdock <pydock.ftdock.Ftdock>` class and
     execute the :meth:`launch() <pydock.ftdock.Ftdock.launch>` method."""
 
-    return Ftdock(input_receptor_path = input_receptor_path, input_lig_path = input_lig_path, output_ftdock_path = output_ftdock_path,
+    return Ftdock(input_rec_path = input_rec_path, input_lig_path = input_lig_path, output_ftdock_path = output_ftdock_path,
                   output_rot_path = output_rot_path, properties = properties, **kwargs).launch()
 
 def main():
@@ -143,7 +160,7 @@ def main():
 
     # Specific args of each building block
     required_args = parser.add_argument_group('required arguments')
-    required_args.add_argument('--input_receptor_path', required=True, help='Receptor PDB file (the largest of the two proteins). Accepted formats: pdb.')
+    required_args.add_argument('--input_rec_path', required=True, help='Receptor PDB file (the largest of the two proteins). Accepted formats: pdb.')
     required_args.add_argument('--input_lig_path', required=True, help='Ligand PDB file (will be rotated and translated). Accepted formats: pdb.')
     required_args.add_argument('--output_ftdock_path', required=True, help='Output ftdock file. Accepted formats: ftdock')
     required_args.add_argument('--output_rot_path', required=True, help='Output rotftdock file. Accepted formats: rot')
@@ -153,7 +170,7 @@ def main():
     properties = settings.ConfReader(config=args.config).get_prop_dic()
 
     # Specific call of each building block
-    ftdock(input_receptor_path = args.input_receptor_path
+    ftdock(input_rec_path = args.input_rec_path
           ,input_lig_path = args.input_lig_path
           ,output_ftdock_path = args.output_ftdock_path
           ,output_rot_path = args.output_rot_path
