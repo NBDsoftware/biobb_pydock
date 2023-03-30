@@ -3,6 +3,7 @@
 """Module containing the Dockser class and the command line interface."""
 import argparse
 from pathlib import Path
+from biobb_common.tools import file_utils as fu
 from biobb_common.generic.biobb_object import BiobbObject
 from biobb_common.configuration import  settings
 from biobb_common.tools.file_utils import launchlogger
@@ -16,8 +17,12 @@ class Dockser(BiobbObject):
     | The pyDock dockser module is used to generate the transformation matrix for all the docking poses.
 
     Args:
-        input_receptor_path (str): Prepared receptor PDB file with pydock setup (the largest of the two proteins). File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
+        input_rec_path (str): Prepared receptor PDB file with pydock setup (the largest of the two proteins). File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
+        input_rec_H_path (str): Receptor PDB file with the correct chain name adapted for pyDock ftdock or zdock. File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
+        input_rec_amber_path (str): Receptor PDB file with the correct chain name adapted for pyDock ftdock or zdock and with hydrogens. File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
         input_lig_path (str): Prepared ligand PDB file with pydock setup (will be rotated and translated). File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
+        input_lig_H_path (str): Ligand PDB file with the correct chain name adapted for pyDock ftdock or zdock and with hydrogens. File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
+        input_lig_amber_path (str): Ligand AMBER parameters for each atom in the pdb structure. File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
         input_rot_path (str): File containing the transformation matrix for all the docking poses. File type: input. `Sample file <>`_. Accepted formats:  (edam:).
         output_ene_path (str): File containing the energy of each docking pose. File type: output. `Sample file <>`_. Accepted formats:  (edam:).
         properties (dic):
@@ -40,15 +45,19 @@ class Dockser(BiobbObject):
             prop = { 
                 'docking_name': 'docking_name'}
 
-            dockser(input_receptor_path='/path/to/my/Receptor/prepared_receptor.pdb',
-                  input_lig_path='/path/to/my/Ligand/prepared_ligand.pdb',
-                  input_rot_path='/path/to/poses_matrix.rot',
-                  output_ene_path='/path/to/energies.ene',
-                  properties=prop)
+            dockser(input_rec_path='prepared_receptor.pdb',
+                    input_rec_H_path='prepared_receptor.pdb.H',
+                    input_rec_amber_path='prepared_receptor.pdb.amber',
+                    input_lig_path='prepared_ligand.pdb',
+                    input_lig_H_path='prepared_ligand.pdb.H',
+                    input_lig_amber_path='prepared_ligand.pdb.amber',
+                    input_rot_path='poses_matrix.rot',
+                    output_ene_path='energies.ene',
+                    properties=prop)
 
     Info:
         * wrapped_software:
-            * name: pyDock dockser and pyDock rotftdock
+            * name: pyDock dockser
             * version: >=3.6.1
             * license: 
         * ontology:
@@ -58,8 +67,9 @@ class Dockser(BiobbObject):
     """
 
     # Adapt input and output file paths as required. Include all files, even optional ones
-    def __init__(self, input_receptor_path: str, input_lig_path: str, input_rot_path: str,
-                output_ene_path: str, properties: dict = None, **kwargs) -> None:
+    def __init__(self, input_rec_path: str, input_rec_H_path: str, input_rec_amber_path: str, 
+                input_lig_path: str, input_lig_H_path: str, input_lig_amber_path: str, 
+                input_rot_path: str, output_ene_path: str, properties: dict = None, **kwargs) -> None:
         properties = properties or {}
 
         # Call parent class constructor
@@ -70,18 +80,19 @@ class Dockser(BiobbObject):
         self.docking_name = properties.get('docking_name', 'docking_name')
         self.binary_path = properties.get('binary_path', 'pydock3') 
 
-        # Save external user-defined paths in properties (only those that need "docking_name" in their file name)
-        self.external_input_paths = {'input_receptor_path': input_receptor_path, 'input_lig_path': input_lig_path, 'input_rot_path': input_rot_path}
+        # Save EXTERNAL filenames (only those that need self.docking_name in their file name)
+        self.external_input_paths = {'input_rec_path': input_rec_path, 'input_rec_H_path': input_rec_H_path, 'input_rec_amber_path': input_rec_amber_path, 
+                                     'input_lig_path': input_lig_path, 'input_lig_H_path': input_lig_H_path, 'input_lig_amber_path': input_lig_amber_path,
+                                     'input_rot_path': input_rot_path}
         self.external_output_paths = {'output_ene_path': output_ene_path}
 
-        # Input/Output files 
+        # Input/Output files (INTERNAL filenames)
         self.io_dict = { 
-            'in': { 'input_receptor_path': f'{self.docking_name}_rec.pdb', 'input_lig_path': f'{self.docking_name}_lig.pdb', 'input_rot_path': f'{self.docking_name}.rot'}, 
+            'in': { 'input_rec_path': f'{self.docking_name}_rec.pdb', 'input_rec_H_path': f'{self.docking_name}_rec.pdb.H', 'input_rec_amber_path': f'{self.docking_name}_rec.pdb.amber',
+                    'input_lig_path': f'{self.docking_name}_lig.pdb', 'input_lig_H_path': f'{self.docking_name}_lig.pdb.H', 'input_lig_amber_path': f'{self.docking_name}_lig.pdb.amber',
+                    'input_rot_path': f'{self.docking_name}.rot'}, 
             'out': { 'output_ene_path': f'{self.docking_name}.ene'} 
         }
-
-        # Copy input files to stage them with correct names
-        copy_files(source_paths = self.external_input_paths, destination_paths = self.io_dict["in"])
         
         # Check the properties
         self.check_properties(properties)
@@ -94,9 +105,13 @@ class Dockser(BiobbObject):
         
         # Dockser Biobb
         if self.check_restart(): return 0
+
+        # Rename input files, EXTERNAL -> INTERNAL
+        renaming_dir = self.renaming_stage()
+        # Stage files with correct names 
         self.stage_files()
 
-        # Create dockser command path: /path/to/inputs + /docking_name
+        # Create dockser command path: /relative/path/to/inputs/from/working/dir + /docking_name
         if self.container_path:
             cmd_path = str(Path(self.container_volume_path).joinpath(self.docking_name)) 
         else:
@@ -116,7 +131,7 @@ class Dockser(BiobbObject):
 
         # Remove temporal files
         self.tmp_files.append(self.stage_io_dict.get("unique_dir"))
-        self.tmp_files.extend(list(self.io_dict['in'].values()))     # Add duplicated input files
+        self.tmp_files.append(renaming_dir)  
         self.remove_tmp_files()
 
         # Check output arguments
@@ -124,12 +139,30 @@ class Dockser(BiobbObject):
 
         return self.return_code
 
-def dockser(input_receptor_path: str, input_lig_path: str, input_rot_path: str, output_ene_path: str, properties: dict = None, **kwargs) -> int:
+    def renaming_stage(self) -> str: 
+        """Initial stage to rename files and respect pyDock convention regarding filenames."""
+
+        renaming_dir = str(Path(fu.create_unique_dir()).resolve())
+
+        # IN files, add renaming_dir to correct file names in io_dict["in"]
+        for file_ref, file_path in self.io_dict["in"].items():
+            if file_path:
+                self.io_dict["in"][file_ref] = str(Path(renaming_dir).joinpath(Path(file_path).name))
+        
+        # Copy external input files to unique dir with correct names
+        copy_files(source_paths = self.external_input_paths, destination_paths = self.io_dict["in"])
+
+        return renaming_dir
+
+def dockser(input_rec_path: str, input_rec_H_path: str, input_rec_amber_path: str,
+            input_lig_path: str, input_lig_H_path: str, input_lig_amber_path: str,
+            input_rot_path: str, output_ene_path: str, properties: dict = None, **kwargs) -> int:
     """Create :class:`Dockser <pydock.dockser.Dockser>` class and
     execute the :meth:`launch() <pydock.dockser.Dockser.launch>` method."""
 
-    return Dockser(input_receptor_path = input_receptor_path, input_lig_path = input_lig_path, input_rot_path = input_rot_path,
-                  output_ene_path = output_ene_path, properties = properties, **kwargs).launch()
+    return Dockser(input_rec_path = input_rec_path, input_rec_H_path = input_rec_H_path, input_lig_amber_path = input_lig_amber_path,
+                   input_lig_path = input_lig_path, input_lig_H_path = input_lig_H_path, input_rec_amber_path = input_rec_amber_path, 
+                   input_rot_path = input_rot_path, output_ene_path = output_ene_path, properties = properties, **kwargs).launch()
 
 def main():
     """Command line execution of this building block. Please check the command line documentation."""
@@ -138,8 +171,12 @@ def main():
 
     # Specific args of each building block
     required_args = parser.add_argument_group('required arguments')
-    required_args.add_argument('--input_receptor_path', required=True, help='Receptor PDB file. Accepted formats: pdb.')
+    required_args.add_argument('--input_rec_path', required=True, help='Receptor PDB file. Accepted formats: pdb.')
+    required_args.add_argument('--input_rec_H_path', required=True, help='Receptor PDB file with the correct chain name adapted for pyDock ftdock or zdock and with hydrogens. File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).')
+    required_args.add_argument('--input_rec_amber_path', required=True, help='Receptor AMBER parameters for each atom in the pdb structure. File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).')
     required_args.add_argument('--input_lig_path', required=True, help='Ligand PDB file. Accepted formats: pdb.')
+    required_args.add_argument('--input_lig_H_path', required=True, help='Ligand PDB file with the correct chain name adapted for pyDock ftdock or zdock and with hydrogens. File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).')
+    required_args.add_argument('--input_lig_amber_path', required=True, help='Ligand AMBER parameters for each atom in the pdb structure. File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).')
     required_args.add_argument('--input_rot_path', required=True, help='Input rotftdock file. Accepted formats: rot.')
     required_args.add_argument('--output_ene_path', required=True, help='Output of dockser, ranked docking poses. Accepted formats: ene.')
 
@@ -148,11 +185,15 @@ def main():
     properties = settings.ConfReader(config=args.config).get_prop_dic()
 
     # Specific call of each building block
-    dockser(input_receptor_path = args.input_receptor_path
-          ,input_lig_path = args.input_lig_path
-          ,output_ftdock_path = args.output_ftdock_path
-          ,output_rot_path = args.output_rot_path
-          ,properties = properties)
+    dockser(input_rec_path = args.input_rec_path
+            ,input_rec_H_path = args.input_rec_H_path
+            ,input_rec_amber_path = args.input_rec_amber_path
+            ,input_lig_path = args.input_lig_path
+            ,input_lig_H_path = args.input_lig_H_path
+            ,input_lig_amber_path = args.input_lig_amber_path
+            ,input_rot_path = args.input_rot_path
+            ,output_ene_path = args.output_ene_path
+            ,properties = properties)
 
 if __name__ == '__main__':
     main()

@@ -1,7 +1,11 @@
 from biobb_pydock.pydock.dockser import dockser
 
-input_receptor_path = '/shared/scratch/jobs/pnavarro/2023_EUCANSHARE/biobb_pydock/biobb_pydock/test/data/dockser/prepared_receptor.pdb'
+input_rec_path = '/shared/scratch/jobs/pnavarro/2023_EUCANSHARE/biobb_pydock/biobb_pydock/test/data/dockser/prepared_receptor.pdb'
+input_rec_H_path = '/shared/scratch/jobs/pnavarro/2023_EUCANSHARE/biobb_pydock/biobb_pydock/test/data/dockser/prepared_receptor.pdb.H'
+input_rec_amber_path = '/shared/scratch/jobs/pnavarro/2023_EUCANSHARE/biobb_pydock/biobb_pydock/test/data/dockser/prepared_receptor.pdb.amber'
 input_lig_path = '/shared/scratch/jobs/pnavarro/2023_EUCANSHARE/biobb_pydock/biobb_pydock/test/data/dockser/prepared_ligand.pdb'
+input_lig_H_path = '/shared/scratch/jobs/pnavarro/2023_EUCANSHARE/biobb_pydock/biobb_pydock/test/data/dockser/prepared_ligand.pdb.H'
+input_lig_amber_path = '/shared/scratch/jobs/pnavarro/2023_EUCANSHARE/biobb_pydock/biobb_pydock/test/data/dockser/prepared_ligand.pdb.amber'
 input_rot_path = '/shared/scratch/jobs/pnavarro/2023_EUCANSHARE/biobb_pydock/biobb_pydock/test/data/dockser/rotftdock_output.rot'
 
 container_volume_path = '/data'
@@ -18,8 +22,12 @@ prop = {
     'container_working_dir': container_working_dir,
     'container_generic_command': container_generic_command}
    
-dockser(input_receptor_path=input_receptor_path,
+dockser(input_rec_path=input_rec_path,
+        input_rec_H_path=input_rec_H_path,
+        input_rec_amber_path=input_rec_amber_path,
         input_lig_path=input_lig_path,
+        input_lig_H_path=input_lig_H_path,
+        input_lig_amber_path=input_lig_amber_path,
         input_rot_path=input_rot_path,
         output_ene_path='dockser_output.ene',
         properties=prop)
