@@ -92,11 +92,11 @@ class Setup(BiobbObject):
         self.ligand = properties.get('ligand', {'mol': 'A','newmol': 'B'})
         self.ini_file_name = f'{self.docking_name}.ini'
 
-        # Save external user-defined paths in properties (only those that need "docking_name" in their file name)
+        # Save EXTERNAL filenames (only those that need self.docking_name in their file name)
         self.external_output_paths = {'output_rec_path': output_rec_path, 'output_rec_H_path': output_rec_H_path, 'output_rec_amber_path': output_rec_amber_path,
                                       'output_lig_path': output_lig_path, 'output_lig_H_path': output_lig_H_path, 'output_lig_amber_path': output_lig_amber_path}
 
-        # Input/Output files with correct output paths (pyDock makes assumptions about the file names)
+        # Input/Output files (INTERNAL filenames)
         self.io_dict = { 
             'in': { 'input_rec_path': input_rec_path, 'input_lig_path': input_lig_path }, 
             'out': { 'output_rec_path': f'{self.docking_name}_rec.pdb','output_rec_H_path': f'{self.docking_name}_rec.pdb.H','output_rec_amber_path': f'{self.docking_name}_rec.pdb.amber', 
@@ -116,13 +116,13 @@ class Setup(BiobbObject):
         if self.check_restart(): return 0
         self.stage_files()
 
-        # Find input/output path
+        # Find  /relative/path/to/inputs/from/working/dir
         if self.container_path:
             io_path = self.container_volume_path
         else:
             io_path = self.stage_io_dict.get("unique_dir")
 
-        # Create command path: /path/to/inputs + /docking_name
+        # Create command path: io_path + /docking_name
         cmd_path = str(Path(io_path).joinpath(self.docking_name))
 
         # Create INI file for pyDock setup
@@ -163,7 +163,7 @@ def setup(input_rec_path: str, input_lig_path: str, output_rec_path: str, output
 
 def main():
     """Command line execution of this building block. Please check the command line documentation."""
-    parser = argparse.ArgumentParser(description='Wrapper of the pyDock pyDock3 setup module.', formatter_class=lambda prog: argparse.RawTextHelpFormatter(prog, width=99999))
+    parser = argparse.ArgumentParser(description='Wrapper of the pyDock setup module.', formatter_class=lambda prog: argparse.RawTextHelpFormatter(prog, width=99999))
     parser.add_argument('--config', required=False, help='Configuration file')
 
     # Specific args of each building block
