@@ -23,6 +23,7 @@ class Dockser(BiobbObject):
         input_lig_path (str): Prepared ligand PDB file with pydock setup (will be rotated and translated). File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
         input_lig_H_path (str): Ligand PDB file with the correct chain name adapted for pyDock ftdock or zdock and with hydrogens. File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
         input_lig_amber_path (str): Ligand AMBER parameters for each atom in the pdb structure. File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
+        input_ref_path (str) (Optional): Reference PDB file with the correct chain name adapted for pyDock. File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
         input_rot_path (str): File containing the transformation matrix for all the docking poses. File type: input. `Sample file <>`_. Accepted formats:  (edam:).
         output_ene_path (str): File containing the energy ranking for all docking poses in input_rot_path. File type: output. `Sample file <>`_. Accepted formats:  (edam:).
         properties (dic):
@@ -52,6 +53,7 @@ class Dockser(BiobbObject):
                     input_lig_H_path='prepared_ligand.pdb.H',
                     input_lig_amber_path='prepared_ligand.pdb.amber',
                     input_rot_path='poses_matrix.rot',
+                    input_ref_path='prepared_reference.pdb',
                     output_ene_path='energies.ene',
                     properties=prop)
 
