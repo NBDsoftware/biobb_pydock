@@ -88,8 +88,8 @@ class Setup(BiobbObject):
         self.binary_path = properties.get('binary_path', 'pydock3') 
 
         # Properties specific for BB
-        self.receptor = properties.get('receptor', {'mol': 'A','newmol': 'A'})
-        self.ligand = properties.get('ligand', {'mol': 'A','newmol': 'B'})
+        self.receptor_prop = properties.get('receptor', {'mol': 'A','newmol': 'A'})
+        self.ligand_prop = properties.get('ligand', {'mol': 'A','newmol': 'B'})
         self.ini_file_name = f'{self.docking_name}.ini'
 
         # Save EXTERNAL filenames (only those that need self.docking_name in their file name)
@@ -125,11 +125,11 @@ class Setup(BiobbObject):
         # Create command path: io_path + /docking_name
         cmd_path = str(Path(io_path).joinpath(self.docking_name))
 
-        # Create INI file for pyDock setup
-        create_ini(output_ini_path = str(Path(self.stage_io_dict.get("unique_dir")).joinpath(self.ini_file_name)),
-                   receptor = self.receptor, receptor_pdb_name=Path(self.stage_io_dict["in"].get("input_rec_path")).name,
-                   ligand = self.ligand, ligand_pdb_name=Path(self.stage_io_dict["in"].get("input_lig_path")).name,
-                   io_path = io_path)
+        # Create INI file for pyDock
+        create_ini(output_path = str(Path(self.stage_io_dict.get("unique_dir")).joinpath(self.ini_file_name)),
+                   receptor_prop = self.receptor_prop, receptor_name=Path(self.stage_io_dict["in"].get("input_rec_path")).name,
+                   ligand_prop = self.ligand_prop, ligand_name=Path(self.stage_io_dict["in"].get("input_lig_path")).name,
+                   inputs_path = io_path)
 
         # Create command line
         self.cmd = [self.binary_path, cmd_path, 'setup']
