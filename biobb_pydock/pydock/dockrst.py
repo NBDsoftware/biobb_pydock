@@ -142,9 +142,7 @@ class Dockrst(BiobbObject):
 
         # Create INI file for pyDock
         create_ini(output_path = str(Path(self.stage_io_dict.get("unique_dir")).joinpath(self.ini_file_name)),
-                   receptor_prop = self.receptor_prop, receptor_name="receptor.pdb",
-                   ligand_prop = self.ligand_prop, ligand_name="ligand.pdb",
-                   inputs_path = io_path)
+                   receptor_prop = self.receptor_prop, ligand_prop = self.ligand_prop)
 
         # Create command line
         self.cmd = [self.binary_path, cmd_path, 'dockrst']
