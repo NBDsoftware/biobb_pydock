@@ -19,16 +19,19 @@ class Setup(BiobbObject):
     Args:
         input_rec_path (str): Receptor PDB file (the largest of the two proteins). File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
         input_lig_path (str): Ligand PDB file (will be rotated and translated). File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
+        input_ref_path (str) (Optional): Reference PDB file. File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
         output_rec_path (str): Receptor PDB file with the correct chain name adapted for pyDock ftdock or zdock. File type: output. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
         output_rec_H_path (str): Receptor PDB file with the correct chain name adapted for pyDock ftdock or zdock and with hydrogens. File type: output. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
         output_rec_amber_path (str): Receptor AMBER parameters for each atom in the pdb structure. File type: output. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
         output_lig_path (str): Ligand PDB file with the correct chain name adapted for pyDock ftdock or zdock. File type: output. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
         output_lig_H_path (str): Ligand PDB file with the correct chain name adapted for pyDock ftdock or zdock and with hydrogens. File type: output. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
         output_lig_amber_path (str): Ligand AMBER parameters for each atom in the pdb structure. File type: output. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
+        output_ref_path (str) (Optional): Reference PDB file with the correct chain name adapted for pyDock dockser. File type: output. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
         properties (dic):
             * **docking_name** (*str*) - ("docking_name") Name for the docking.
             * **receptor** (*dict*) - ("{}") Receptor dictionary with "mol" (chain name of receptor in input_rec_path) and "newmol" (new chain name of receptor in output_rec_path). Do not include "pdb" file here.
-            * **ligand** (*dict*) - ("{}") Ligand dictionary with "mol" (chain name of ligand in input_ligand_path) and "newmol" (new chain name of ligand in output_lig_path, different from receptor "newmol"). Do not include "pdb" file here.
+            * **ligand** (*dict*) - ("{}") Ligand dictionary with "mol" (chain name of ligand in input_ligand_path) and "newmol" (new chain name of ligand in output_lig_path, different from receptor "newmol"). Do not include "pdb" here.
+            * **reference** (*dict*) - ("{}") Reference dictionary with "recmol" (chain name of receptor in reference pdb), "ligmol" (chain name of ligand in reference pdb). Do not include "pdb", "newrcmol" or "newligmol" here.
             * **binary_path** (*str*) - ("pyDock3") Path to the pyDock executable binary.
             * **remove_tmp** (*bool*) - (True) [WF property] Remove temporal files.
             * **restart** (*bool*) - (False) [WF property] Do not execute if output files exist.
@@ -55,12 +58,14 @@ class Setup(BiobbObject):
 
             setup(input_rec_path='receptor.pdb',
                   input_lig_path='ligand.pdb',
+                  input_ref_path='reference.pdb',
                   output_rec_path='prepared_receptor.pdb',
                   output_rec_H_path='prepared_receptor.pdb.H',
                   output_rec_amber_path='prepared_receptor.pdb.amber',
                   output_lig_path='prepared_ligand.pdb',
                   output_lig_H_path='prepared_ligand.pdb.H',
                   output_lig_amber_path='prepared_ligand.pdb.amber',
+                  output_ref_path='prepared_reference.pdb',
                   properties=prop)
 
     Info:
@@ -75,8 +80,9 @@ class Setup(BiobbObject):
     """
 
     # Adapt input and output file paths as required. Include all files, even optional ones
-    def __init__(self, input_rec_path: str, input_lig_path: str, output_rec_path: str, output_rec_H_path: str, output_rec_amber_path: str, 
-                 output_lig_path: str, output_lig_H_path: str, output_lig_amber_path: str, properties: dict = None, **kwargs) -> None:
+    def __init__(self, input_rec_path: str, input_lig_path: str, output_rec_path: str, output_rec_H_path: str, 
+                 output_rec_amber_path: str, output_lig_path: str, output_lig_H_path: str, output_lig_amber_path: str, 
+                 input_ref_path: str = None, output_ref_path: str = None, properties: dict = None, **kwargs) -> None:
         properties = properties or {}
 
         # Call parent class constructor
@@ -90,17 +96,20 @@ class Setup(BiobbObject):
         # Properties specific for BB
         self.receptor_prop = properties.get('receptor', {'mol': 'A','newmol': 'A'})
         self.ligand_prop = properties.get('ligand', {'mol': 'A','newmol': 'B'})
+        self.reference_prop = properties.get('reference')
         self.ini_file_name = f'{self.docking_name}.ini'
 
-        # Save EXTERNAL filenames (only those that need self.docking_name in their file name)
+        # Save EXTERNAL filenames (only those that need self.docking_name in their file name) - arbitrary names for input files are ok in setup module
         self.external_output_paths = {'output_rec_path': output_rec_path, 'output_rec_H_path': output_rec_H_path, 'output_rec_amber_path': output_rec_amber_path,
-                                      'output_lig_path': output_lig_path, 'output_lig_H_path': output_lig_H_path, 'output_lig_amber_path': output_lig_amber_path}
+                                      'output_lig_path': output_lig_path, 'output_lig_H_path': output_lig_H_path, 'output_lig_amber_path': output_lig_amber_path,
+                                      'output_ref_path': output_ref_path}
 
         # Input/Output files (INTERNAL filenames)
         self.io_dict = { 
-            'in': { 'input_rec_path': input_rec_path, 'input_lig_path': input_lig_path }, 
+            'in': { 'input_rec_path': input_rec_path, 'input_lig_path': input_lig_path, 'input_ref_path': input_ref_path}, 
             'out': { 'output_rec_path': f'{self.docking_name}_rec.pdb','output_rec_H_path': f'{self.docking_name}_rec.pdb.H','output_rec_amber_path': f'{self.docking_name}_rec.pdb.amber', 
-                     'output_lig_path': f'{self.docking_name}_lig.pdb','output_lig_H_path': f'{self.docking_name}_lig.pdb.H','output_lig_amber_path': f'{self.docking_name}_lig.pdb.amber'} 
+                     'output_lig_path': f'{self.docking_name}_lig.pdb','output_lig_H_path': f'{self.docking_name}_lig.pdb.H','output_lig_amber_path': f'{self.docking_name}_lig.pdb.amber',
+                     'output_ref_path': f'{self.docking_name}_ref.pdb'} 
         }
 
         # Check the properties
@@ -127,9 +136,10 @@ class Setup(BiobbObject):
 
         # Create INI file for pyDock
         create_ini(output_path = str(Path(self.stage_io_dict.get("unique_dir")).joinpath(self.ini_file_name)),
-                   receptor_prop = self.receptor_prop, receptor_name=Path(self.stage_io_dict["in"].get("input_rec_path")).name,
-                   ligand_prop = self.ligand_prop, ligand_name=Path(self.stage_io_dict["in"].get("input_lig_path")).name,
-                   inputs_path = io_path)
+                   receptor_prop = self.receptor_prop, ligand_prop = self.ligand_prop, reference_prop = self.reference_prop,
+                   ligand_path = self.stage_io_dict["in"].get("input_lig_path"),
+                   receptor_path = self.stage_io_dict["in"].get("input_rec_path"),
+                   reference_path = self.stage_io_dict["in"].get("input_ref_path"))
 
         # Create command line
         self.cmd = [self.binary_path, cmd_path, 'setup']
@@ -153,13 +163,15 @@ class Setup(BiobbObject):
         return self.return_code
 
 def setup(input_rec_path: str, input_lig_path: str, output_rec_path: str, output_rec_H_path: str, output_rec_amber_path: str, 
-          output_lig_path: str, output_lig_H_path: str, output_lig_amber_path: str, properties: dict = None, **kwargs) -> int:
+          output_lig_path: str, output_lig_H_path: str, output_lig_amber_path: str, input_ref_path: str = None, 
+          output_ref_path: str = None, properties: dict = None, **kwargs) -> int:
     """Create :class:`Setup <pydock.setup.Setup>` class and
     execute the :meth:`launch() <pydock.setup.Setup.launch>` method."""
 
-    return Setup(input_rec_path = input_rec_path, input_lig_path = input_lig_path, output_rec_path = output_rec_path, output_rec_H_path = output_rec_H_path,
-                 output_rec_amber_path = output_rec_amber_path, output_lig_path = output_lig_path, output_lig_H_path = output_lig_H_path, output_lig_amber_path=output_lig_amber_path,
-                 properties = properties, **kwargs).launch()
+    return Setup(input_rec_path = input_rec_path, input_lig_path = input_lig_path, input_ref_path = input_ref_path, 
+                 output_rec_path = output_rec_path, output_rec_H_path = output_rec_H_path, output_rec_amber_path = output_rec_amber_path, 
+                 output_lig_path = output_lig_path, output_lig_H_path = output_lig_H_path, output_lig_amber_path = output_lig_amber_path,
+                 output_ref_path = output_ref_path, properties = properties, **kwargs).launch()
 
 def main():
     """Command line execution of this building block. Please check the command line documentation."""
@@ -176,7 +188,9 @@ def main():
     required_args.add_argument('--output_lig_path', required=True, help='Ligand PDB file with the correct chain name adapted for pyDock ftdock or zdock. Accepted formats: pdb.')
     required_args.add_argument('--output_lig_H_path', required=True, help='Ligand PDB file with the correct chain name adapted for pyDock ftdock or zdock and with hydrogens. File type: output. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).')
     required_args.add_argument('--output_lig_amber_path', required=True, help='Ligand AMBER parameters for each atom in the pdb structure. File type: output. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).')
-    
+    parser.add_argument('--input_ref_path', required=False, help='Reference PDB file. Accepted formats: pdb.')
+    parser.add_argument('--output_ref_path', required=False, help='Reference PDB file with the correct chain name adapted for pyDock dockser. Accepted formats: pdb.')
+
     args = parser.parse_args()
     args.config = args.config or "{}"
     properties = settings.ConfReader(config=args.config).get_prop_dic()
@@ -184,12 +198,14 @@ def main():
     # Specific call of each building block
     setup(input_rec_path = args.input_rec_path
           ,input_lig_path = args.input_lig_path
+          ,input_ref_path = args.input_ref_path
           ,output_rec_path = args.output_rec_path
           ,output_rec_H_path= args.output_rec_H_path
           ,output_rec_amber_path = args.output_rec_amber_path
           ,output_lig_path = args.output_lig_path
           ,output_lig_H_path = args.output_lig_H_path
           ,output_lig_amber_path = args.output_lig_amber_path
+          ,output_ref_path = args.output_ref_path
           ,properties = properties)
 
 if __name__ == '__main__':

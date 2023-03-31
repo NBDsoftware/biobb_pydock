@@ -4,9 +4,9 @@ import shutil
 from pathlib import Path
 from typing import Mapping
 
-def create_ini(output_path: str, receptor_prop: Mapping[str, str], receptor_name: str,
-               ligand_prop: Mapping[str, str], ligand_name: str, inputs_path: str) -> None:
-    """Creates INI file for PyDock setup """
+def create_ini(output_path: str, receptor_prop: Mapping[str, str], ligand_prop: Mapping[str, str], reference_prop: Mapping[str, str] = None, 
+               ligand_path: str = None, receptor_path: str = None, reference_path: str = None) -> None:
+    """Creates INI file for PyDock setup."""
 
     ini_lines  = []
 
@@ -14,8 +14,9 @@ def create_ini(output_path: str, receptor_prop: Mapping[str, str], receptor_name
     ini_lines.append('[receptor]')
 
     # Receptor pdb path
-    receptor_pdb_path = str(Path(inputs_path).joinpath(receptor_name))
-    ini_lines.append(f'pdb = {receptor_pdb_path}')
+    if receptor_path is None:
+        receptor_path = '-'
+    ini_lines.append(f'pdb = {receptor_path}')
 
     # Receptor items
     for key, value in receptor_prop.items():
@@ -25,13 +26,31 @@ def create_ini(output_path: str, receptor_prop: Mapping[str, str], receptor_name
     ini_lines.append('[ligand]')
 
     # Ligand pdb path
-    ligand_pdb_path = str(Path(inputs_path).joinpath(ligand_name))
-    ini_lines.append(f'pdb = {ligand_pdb_path}')
+    if ligand_path is None:
+        ligand_path = '-'
+    ini_lines.append(f'pdb = {ligand_path}')
+
 
     # Ligand items
     for key, value in ligand_prop.items():
         ini_lines.append(f'{key} = {value}')
 
+    # Reference
+    if None not in (reference_prop, reference_path):
+
+        ini_lines.append('[reference]')
+
+        # Reference pdb path
+        ini_lines.append(f'pdb = {reference_path}')
+
+        # Reference items
+        for key, value in reference_prop.items():
+            ini_lines.append(f'{key} = {value}')
+        
+        # Additional items
+        ini_lines.append(f'newrecmol = {receptor_prop["newmol"]}')
+        ini_lines.append(f'newligmol = {ligand_prop["newmol"]}')
+        
     return write_ini(output_path, ini_lines)
 
 def write_ini(output_path: str, ini_lines: list) -> None:
