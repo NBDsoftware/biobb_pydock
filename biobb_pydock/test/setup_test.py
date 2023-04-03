@@ -43,7 +43,7 @@ prop = {
     'container_working_dir': container_working_dir,
     'container_generic_command': container_generic_command}
 
-setup(input_rec_path=input_receptor_path,
+setup(input_rec_pdb_path=input_receptor_path,
       input_lig_path=input_lig_path,
       input_ref_path=input_ref_path,
       output_rec_path='prepared_receptor.pdb',

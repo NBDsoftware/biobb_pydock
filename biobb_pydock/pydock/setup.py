@@ -17,8 +17,12 @@ class Setup(BiobbObject):
     | The pyDock setup module is used to prepare the input files for the docking process.
 
     Args:
-        input_rec_path (str): Receptor PDB file (the largest of the two proteins). File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
-        input_lig_path (str): Ligand PDB file (will be rotated and translated). File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
+        input_rec_pdb_path (str) (Optional): Receptor PDB file (the largest of the two proteins). Provide either the pdb file or AMBER coordinates and topology files. File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
+        input_rec_coords_path (str) (Optional): Receptor AMBER coordinates file (the largest of the two proteins). Provide either AMBER coordinates and topology or the pdb file. File type: input. Accepted formats: inpcrd, restrt, rs7, crd.
+        input_rec_top_path (str) (Optional): Receptor AMBER topology file (the largest of the two proteins). Provide either AMBER coordinates and topology or the pdb file. File type: input. Accepted formats: prmtop, top, parm7
+        input_lig_pdb_path (str) (Optional): Ligand PDB file (will be rotated and translated). Provide either the pdb file or AMBER coordinates and topology files. File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
+        input_lig_coords_path (str) (Optional): Ligand AMBER coordinates file (will be rotated and translated). Provide either AMBER coordinates and topology or the pdb file. File type: input. Accepted formats: inpcrd, restrt, rs7, crd.
+        input_lig_top_path (str) (Optional): Ligand AMBER topology file (will be rotated and translated). Provide either AMBER coordinates and topology or the pdb file. File type: input. Accepted formats: prmtop, top, parm7
         input_ref_path (str) (Optional): Reference PDB file. File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
         output_rec_path (str): Receptor PDB file with the correct chain name adapted for pyDock ftdock or zdock. File type: output. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
         output_rec_H_path (str): Receptor PDB file with the correct chain name adapted for pyDock ftdock or zdock and with hydrogens. File type: output. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
@@ -29,7 +33,7 @@ class Setup(BiobbObject):
         output_ref_path (str) (Optional): Reference PDB file with the correct chain name adapted for pyDock dockser. File type: output. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
         properties (dic):
             * **docking_name** (*str*) - ("docking_name") Name for the docking.
-            * **receptor** (*dict*) - ("{}") Receptor dictionary with "mol" (chain name of receptor in input_rec_path) and "newmol" (new chain name of receptor in output_rec_path). Do not include "pdb" file here.
+            * **receptor** (*dict*) - ("{}") Receptor dictionary with "mol" (chain name of receptor in input_rec_pdb_path) and "newmol" (new chain name of receptor in output_rec_path). Do not include "pdb" file here.
             * **ligand** (*dict*) - ("{}") Ligand dictionary with "mol" (chain name of ligand in input_ligand_path) and "newmol" (new chain name of ligand in output_lig_path, different from receptor "newmol"). Do not include "pdb" here.
             * **reference** (*dict*) - ("{}") Reference dictionary with "recmol" (chain name of receptor in reference pdb), "ligmol" (chain name of ligand in reference pdb). Do not include "pdb", "newrcmol" or "newligmol" here.
             * **binary_path** (*str*) - ("pyDock3") Path to the pyDock executable binary.
@@ -56,8 +60,8 @@ class Setup(BiobbObject):
                     {'mol': 'A',
                      'newmol': 'B'}}
 
-            setup(input_rec_path='receptor.pdb',
-                  input_lig_path='ligand.pdb',
+            setup(input_rec_pdb_path='receptor.pdb',
+                  input_lig_pdb_path='ligand.pdb',
                   input_ref_path='reference.pdb',
                   output_rec_path='prepared_receptor.pdb',
                   output_rec_H_path='prepared_receptor.pdb.H',
@@ -80,8 +84,9 @@ class Setup(BiobbObject):
     """
 
     # Adapt input and output file paths as required. Include all files, even optional ones
-    def __init__(self, input_rec_path: str, input_lig_path: str, output_rec_path: str, output_rec_H_path: str, 
-                 output_rec_amber_path: str, output_lig_path: str, output_lig_H_path: str, output_lig_amber_path: str, 
+    def __init__(self, output_rec_path: str, output_rec_H_path: str, output_rec_amber_path: str, output_lig_path: str, 
+                 output_lig_H_path: str, output_lig_amber_path: str, input_rec_pdb_path: str = None, input_rec_coords_path: str = None, 
+                 input_rec_top_path: str = None, input_lig_pdb_path: str = None, input_lig_coords_path: str = None, input_lig_top_path: str = None,
                  input_ref_path: str = None, output_ref_path: str = None, properties: dict = None, **kwargs) -> None:
         properties = properties or {}
 
@@ -106,7 +111,9 @@ class Setup(BiobbObject):
 
         # Input/Output files (INTERNAL filenames)
         self.io_dict = { 
-            'in': { 'input_rec_path': input_rec_path, 'input_lig_path': input_lig_path, 'input_ref_path': input_ref_path}, 
+            'in': { 'input_rec_pdb_path': input_rec_pdb_path, 'input_rec_coords_path': input_rec_coords_path, 'input_rec_top_path': input_rec_top_path,
+                    'input_lig_pdb_path': input_lig_pdb_path, 'input_lig_coords_path': input_lig_coords_path, 'input_lig_top_path': input_lig_top_path, 
+                    'input_ref_path': input_ref_path}, 
             'out': { 'output_rec_path': f'{self.docking_name}_rec.pdb','output_rec_H_path': f'{self.docking_name}_rec.pdb.H','output_rec_amber_path': f'{self.docking_name}_rec.pdb.amber', 
                      'output_lig_path': f'{self.docking_name}_lig.pdb','output_lig_H_path': f'{self.docking_name}_lig.pdb.H','output_lig_amber_path': f'{self.docking_name}_lig.pdb.amber',
                      'output_ref_path': f'{self.docking_name}_ref.pdb'} 
@@ -134,12 +141,10 @@ class Setup(BiobbObject):
         # Create command path: io_path + /docking_name
         cmd_path = str(Path(io_path).joinpath(self.docking_name))
 
-        # Create INI file for pyDock
+        # Create INI file for pyDock TODO: change argument for whole dictionary, save paths inside
         create_ini(output_path = str(Path(self.stage_io_dict.get("unique_dir")).joinpath(self.ini_file_name)),
                    receptor_prop = self.receptor_prop, ligand_prop = self.ligand_prop, reference_prop = self.reference_prop,
-                   ligand_path = self.stage_io_dict["in"].get("input_lig_path"),
-                   receptor_path = self.stage_io_dict["in"].get("input_rec_path"),
-                   reference_path = self.stage_io_dict["in"].get("input_ref_path"))
+                   input_paths = self.io_dict["in"])
 
         # Create command line
         self.cmd = [self.binary_path, cmd_path, 'setup']
@@ -162,16 +167,18 @@ class Setup(BiobbObject):
 
         return self.return_code
 
-def setup(input_rec_path: str, input_lig_path: str, output_rec_path: str, output_rec_H_path: str, output_rec_amber_path: str, 
-          output_lig_path: str, output_lig_H_path: str, output_lig_amber_path: str, input_ref_path: str = None, 
-          output_ref_path: str = None, properties: dict = None, **kwargs) -> int:
+def setup(output_rec_path: str, output_rec_H_path: str, output_rec_amber_path: str, output_lig_path: str, output_lig_H_path: str, 
+          output_lig_amber_path: str, input_rec_pdb_path: str = None, input_rec_coords_path: str = None, input_rec_top_path: str = None, 
+          input_lig_pdb_path: str = None, input_lig_coords_path: str = None, input_lig_top_path: str = None,
+          input_ref_path: str = None, output_ref_path: str = None, properties: dict = None, **kwargs) -> int:
     """Create :class:`Setup <pydock.setup.Setup>` class and
     execute the :meth:`launch() <pydock.setup.Setup.launch>` method."""
 
-    return Setup(input_rec_path = input_rec_path, input_lig_path = input_lig_path, input_ref_path = input_ref_path, 
-                 output_rec_path = output_rec_path, output_rec_H_path = output_rec_H_path, output_rec_amber_path = output_rec_amber_path, 
-                 output_lig_path = output_lig_path, output_lig_H_path = output_lig_H_path, output_lig_amber_path = output_lig_amber_path,
-                 output_ref_path = output_ref_path, properties = properties, **kwargs).launch()
+    return Setup(input_rec_pdb_path = input_rec_pdb_path, input_rec_coords_path = input_rec_coords_path, input_rec_top_path = input_rec_top_path, 
+                 input_lig_pdb_path = input_lig_pdb_path, input_lig_coords_path = input_lig_coords_path, input_lig_top_path = input_lig_top_path,
+                 input_ref_path = input_ref_path, output_rec_path = output_rec_path, output_rec_H_path = output_rec_H_path, 
+                 output_rec_amber_path = output_rec_amber_path, output_lig_path = output_lig_path, output_lig_H_path = output_lig_H_path, 
+                 output_lig_amber_path = output_lig_amber_path, output_ref_path = output_ref_path, properties = properties, **kwargs).launch()
 
 def main():
     """Command line execution of this building block. Please check the command line documentation."""
@@ -180,14 +187,18 @@ def main():
 
     # Specific args of each building block
     required_args = parser.add_argument_group('required arguments')
-    required_args.add_argument('--input_rec_path', required=True, help='Receptor PDB file (the largest of the two proteins). Accepted formats: pdb.')
-    required_args.add_argument('--input_lig_path', required=True, help='Ligand PDB file (will be rotated and translated). Accepted formats: pdb.')
     required_args.add_argument('--output_rec_path', required=True, help='Receptor PDB file with the correct chain name adapted for pyDock ftdock or zdock. Accepted formats: pdb.')
     required_args.add_argument('--output_rec_H_path', required=True, help='Receptor PDB file with the correct chain name adapted for pyDock ftdock or zdock and with hydrogens. File type: output. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).')
     required_args.add_argument('--output_rec_amber_path', required=True, help='Receptor AMBER parameters for each atom in the pdb structure. File type: output. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).')
     required_args.add_argument('--output_lig_path', required=True, help='Ligand PDB file with the correct chain name adapted for pyDock ftdock or zdock. Accepted formats: pdb.')
     required_args.add_argument('--output_lig_H_path', required=True, help='Ligand PDB file with the correct chain name adapted for pyDock ftdock or zdock and with hydrogens. File type: output. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).')
     required_args.add_argument('--output_lig_amber_path', required=True, help='Ligand AMBER parameters for each atom in the pdb structure. File type: output. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).')
+    parser.add_argument('--input_rec_pdb_path', required=False, help='Receptor PDB file (the largest of the two proteins). Accepted formats: pdb.')
+    parser.add_argument('--input_rec_coords_path', required=False, help='Receptor AMBER coordinates file (the largest of the two proteins). Provide either AMBER coordinates and topology or the pdb file. File type: input. Accepted formats: inpcrd, restrt, rs7, crd.')
+    parser.add_argument('--input_rec_top_path', required=False, help='Receptor AMBER topology file (the largest of the two proteins). Provide either AMBER coordinates and topology or the pdb file. File type: input. Accepted formats: prmtop, top, parm7')
+    parser.add_argument('--input_lig_pdb_path', required=False, help='Ligand PDB file (will be rotated and translated). Accepted formats: pdb.')
+    parser.add_argument('--input_lig_coords_path', required=False, help='Ligand AMBER coordinates file (will be rotated and translated). Provide either AMBER coordinates and topology or the pdb file. File type: input. Accepted formats: inpcrd, restrt, rs7, crd.')
+    parser.add_argument('--input_lig_top_path', required=False, help='Ligand AMBER topology file (will be rotated and translated). Provide either AMBER coordinates and topology or the pdb file. File type: input. Accepted formats: prmtop, top, parm7')
     parser.add_argument('--input_ref_path', required=False, help='Reference PDB file. Accepted formats: pdb.')
     parser.add_argument('--output_ref_path', required=False, help='Reference PDB file with the correct chain name adapted for pyDock dockser. Accepted formats: pdb.')
 
@@ -196,8 +207,12 @@ def main():
     properties = settings.ConfReader(config=args.config).get_prop_dic()
 
     # Specific call of each building block
-    setup(input_rec_path = args.input_rec_path
-          ,input_lig_path = args.input_lig_path
+    setup(input_rec_pdb_path = args.input_rec_pdb_path
+          ,input_rec_coords_path = args.input_rec_coords_path
+          ,input_rec_top_path = args.input_rec_top_path
+          ,input_lig_pdb_path = args.input_lig_pdb_path
+          ,input_lig_coords_path = args.input_lig_coords_path
+          ,input_lig_top_path = args.input_lig_top_path
           ,input_ref_path = args.input_ref_path
           ,output_rec_path = args.output_rec_path
           ,output_rec_H_path= args.output_rec_H_path

@@ -4,20 +4,36 @@ import shutil
 from pathlib import Path
 from typing import Mapping
 
-def create_ini(output_path: str, receptor_prop: Mapping[str, str], ligand_prop: Mapping[str, str], reference_prop: Mapping[str, str] = None, 
-               ligand_path: str = None, receptor_path: str = None, reference_path: str = None) -> None:
+def create_ini(output_path: str, receptor_prop: Mapping[str, str], ligand_prop: Mapping[str, str], 
+               reference_prop: Mapping[str, str] = None, input_paths: str = None) -> None:
     """Creates INI file for PyDock setup."""
 
+    # Ligand input files: either pdb or coords and top
+    ligand_pdb_path = input_paths.get("input_lig_pdb_path")
+    ligand_coords_path = input_paths.get("input_lig_coords_path")
+    ligand_top_path = input_paths.get("input_lig_top_path")
+
+    # Receptor input files: either pdb or coords and top
+    receptor_pdb_path = input_paths.get("input_rec_pdb_path")
+    receptor_coords_path = input_paths.get("input_rec_coords_path")
+    receptor_top_path = input_paths.get("input_rec_top_path")
+
+    # Reference input file path
+    reference_path = input_paths.get("input_ref_path")
+    
     ini_lines  = []
 
     # Receptor
     ini_lines.append('[receptor]')
 
     # Receptor pdb path
-    if receptor_path is None:
-        receptor_path = '-'
-    ini_lines.append(f'pdb = {receptor_path}')
-
+    if receptor_pdb_path:
+        ini_lines.append(f'pdb = {receptor_pdb_path}')
+    elif receptor_coords_path and receptor_top_path:
+        ini_lines.append(f'pdb = {receptor_coords_path},{receptor_top_path}')
+    else:
+        receptor_pdb_path = '-'
+    
     # Receptor items
     for key, value in receptor_prop.items():
         ini_lines.append(f'{key} = {value}')
@@ -26,11 +42,13 @@ def create_ini(output_path: str, receptor_prop: Mapping[str, str], ligand_prop: 
     ini_lines.append('[ligand]')
 
     # Ligand pdb path
-    if ligand_path is None:
-        ligand_path = '-'
-    ini_lines.append(f'pdb = {ligand_path}')
-
-
+    if ligand_pdb_path:
+        ini_lines.append(f'pdb = {ligand_pdb_path}')
+    elif ligand_coords_path and ligand_top_path:
+        ini_lines.append(f'pdb = {ligand_coords_path},{ligand_top_path}')
+    else:
+        ligand_pdb_path = '-'
+    
     # Ligand items
     for key, value in ligand_prop.items():
         ini_lines.append(f'{key} = {value}')
