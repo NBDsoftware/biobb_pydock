@@ -141,10 +141,10 @@ class Setup(BiobbObject):
         # Create command path: io_path + /docking_name
         cmd_path = str(Path(io_path).joinpath(self.docking_name))
 
-        # Create INI file for pyDock TODO: change argument for whole dictionary, save paths inside
+        # Create INI file for pyDock 
         create_ini(output_path = str(Path(self.stage_io_dict.get("unique_dir")).joinpath(self.ini_file_name)),
                    receptor_prop = self.receptor_prop, ligand_prop = self.ligand_prop, reference_prop = self.reference_prop,
-                   input_paths = self.io_dict["in"])
+                   input_paths = self.stage_io_dict["in"])
 
         # Create command line
         self.cmd = [self.binary_path, cmd_path, 'setup']

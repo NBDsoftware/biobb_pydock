@@ -44,7 +44,7 @@ prop = {
     'container_generic_command': container_generic_command}
 
 setup(input_rec_pdb_path=input_receptor_path,
-      input_lig_path=input_lig_path,
+      input_lig_pdb_path=input_lig_path,
       input_ref_path=input_ref_path,
       output_rec_path='prepared_receptor.pdb',
       output_rec_H_path='prepared_receptor.pdb.H',
