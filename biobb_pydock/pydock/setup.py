@@ -17,12 +17,12 @@ class Setup(BiobbObject):
     | The pyDock setup module is used to prepare the input files for the docking process.
 
     Args:
-        input_rec_pdb_path (str) (Optional): Receptor PDB file (the largest of the two proteins). Provide either the pdb file or AMBER coordinates and topology files. File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
-        input_rec_coords_path (str) (Optional): Receptor AMBER coordinates file (the largest of the two proteins). Provide either AMBER coordinates and topology or the pdb file. File type: input. Accepted formats: inpcrd, restrt, rs7, crd.
-        input_rec_top_path (str) (Optional): Receptor AMBER topology file (the largest of the two proteins). Provide either AMBER coordinates and topology or the pdb file. File type: input. Accepted formats: prmtop, top, parm7
-        input_lig_pdb_path (str) (Optional): Ligand PDB file (will be rotated and translated). Provide either the pdb file or AMBER coordinates and topology files. File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
+        input_rec_pdb_path (str): Receptor PDB file (the largest of the two proteins). Provide either the pdb file or AMBER coordinates and topology files. File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
+        input_rec_coords_path (str) (Optional): Receptor AMBER coordinates file (the largest of the two proteins). Provide either AMBER coordinates and topology or the pdb file. File type: input. Accepted formats: inpcrd (edam:format_3878), restrt (edam:format_3886), rs7 (edam:format_3886), crd (edam:format_3878).
+        input_rec_top_path (str) (Optional): Receptor AMBER topology file (the largest of the two proteins). Provide either AMBER coordinates and topology or the pdb file. File type: input. Accepted formats: prmtop (edam:format_3881), top (edam:format_3881), parm7 (edam:format_3881)
+        input_lig_pdb_path (str): Ligand PDB file (will be rotated and translated). Provide either the pdb file or AMBER coordinates and topology files. File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476). 
         input_lig_coords_path (str) (Optional): Ligand AMBER coordinates file (will be rotated and translated). Provide either AMBER coordinates and topology or the pdb file. File type: input. Accepted formats: inpcrd, restrt, rs7, crd.
-        input_lig_top_path (str) (Optional): Ligand AMBER topology file (will be rotated and translated). Provide either AMBER coordinates and topology or the pdb file. File type: input. Accepted formats: prmtop, top, parm7
+        input_lig_top_path (str) (Optional): Ligand AMBER topology file (will be rotated and translated). Provide either AMBER coordinates and topology or the pdb file. File type: input. Accepted formats: prmtop (edam:format_3881), top (edam:format_3881), parm7 (edam:format_3881)
         input_ref_path (str) (Optional): Reference PDB file. File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
         output_rec_path (str): Receptor PDB file with the correct chain name adapted for pyDock ftdock or zdock. File type: output. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
         output_rec_H_path (str): Receptor PDB file with the correct chain name adapted for pyDock ftdock or zdock and with hydrogens. File type: output. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
@@ -99,9 +99,9 @@ class Setup(BiobbObject):
         self.binary_path = properties.get('binary_path', 'pydock3') 
 
         # Properties specific for BB
-        self.receptor_prop = properties.get('receptor', {'mol': 'A','newmol': 'A'})
-        self.ligand_prop = properties.get('ligand', {'mol': 'A','newmol': 'B'})
-        self.reference_prop = properties.get('reference')
+        self.receptor = properties.get('receptor', {'mol': 'A','newmol': 'A'})
+        self.ligand = properties.get('ligand', {'mol': 'A','newmol': 'B'})
+        self.reference = properties.get('reference')
         self.ini_file_name = f'{self.docking_name}.ini'
 
         # Save EXTERNAL filenames (only those that need self.docking_name in their file name) - arbitrary names for input files are ok in setup module
@@ -132,18 +132,15 @@ class Setup(BiobbObject):
         if self.check_restart(): return 0
         self.stage_files()
 
-        # Find  /relative/path/to/inputs/from/working/dir
+        # Create command path: /input/output/path + /docking_name
         if self.container_path:
-            io_path = self.container_volume_path
+            cmd_path = str(Path(self.container_volume_path).joinpath(self.docking_name))
         else:
-            io_path = self.stage_io_dict.get("unique_dir")
-
-        # Create command path: io_path + /docking_name
-        cmd_path = str(Path(io_path).joinpath(self.docking_name))
+            cmd_path = str(Path(self.stage_io_dict.get("unique_dir")).joinpath(self.docking_name))
 
         # Create INI file for pyDock 
         create_ini(output_path = str(Path(self.stage_io_dict.get("unique_dir")).joinpath(self.ini_file_name)),
-                   receptor_prop = self.receptor_prop, ligand_prop = self.ligand_prop, reference_prop = self.reference_prop,
+                   receptor_prop = self.receptor, ligand_prop = self.ligand, reference_prop = self.reference,
                    input_paths = self.stage_io_dict["in"])
 
         # Create command line
