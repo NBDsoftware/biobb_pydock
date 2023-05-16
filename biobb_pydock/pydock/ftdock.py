@@ -73,11 +73,16 @@ class Ftdock(BiobbObject):
         self.docking_name = properties.get('docking_name', 'docking_name')
         self.binary_path = properties.get('binary_path', 'pydock3') 
 
+        # Fix the relation between the working dir and the volume path
+        # PyDock expects the output files from ftdock to be in the working dir 
+        #  - rotftdock tries to find the ftdock output files in the working dir starting with docking_name - independently of the command line argument 
+        self.container_working_dir = self.container_volume_path
+
         # Save EXTERNAL filenames (only those that need self.docking_name in their file name)
         self.external_input_paths = {'input_rec_path': input_rec_path, 'input_lig_path': input_lig_path}
         self.external_output_paths = {'output_ftdock_path': output_ftdock_path, 'output_rot_path': output_rot_path}
 
-        # Input/Output files (INTERNAL filenames)
+        # Input/Output files (INTERNAL filenames) NOTE: we use here internal filenames to stage files with the correct names - however, later we will rename them to the external ones - thus restart = True will not work in any pydock biobb workflow!!
         self.io_dict = { 
             'in': { 'input_rec_path': f'{self.docking_name}_rec.pdb', 'input_lig_path': f'{self.docking_name}_lig.pdb' }, 
             'out': { 'output_ftdock_path': f'{self.docking_name}.ftdock', 'output_rot_path': f'{self.docking_name}.rot'} 
@@ -100,17 +105,14 @@ class Ftdock(BiobbObject):
         # Stage files with correct names 
         self.stage_files()
 
-        # Create ftdock command path: /relative/path/to/inputs/from/working/dir + /docking_name
+        # Create command path: /input/output/path + /docking_name
         if self.container_path:
-            ftdock_path = str(Path(self.container_volume_path).joinpath(self.docking_name)) 
+            cmd_path = str(Path(self.container_volume_path).joinpath(self.docking_name))
         else:
-            ftdock_path = str(Path(self.stage_io_dict.get("unique_dir")).joinpath(self.docking_name)) 
-
-        # Create rotftdock command path: /working_dir + /docking_name
-        rotftdock_path = self.docking_name
+            cmd_path = str(Path(self.stage_io_dict.get("unique_dir")).joinpath(self.docking_name))
 
         # Create command line
-        self.cmd = [self.binary_path, ftdock_path, 'ftdock', '&&', self.binary_path, rotftdock_path, 'rotftdock']
+        self.cmd = [self.binary_path, cmd_path, 'ftdock', '&&', self.binary_path, self.docking_name, 'rotftdock']
 
         # Run Biobb block
         self.run_biobb()
