@@ -9,7 +9,7 @@ input_lig_amber_path = '/shared/scratch/jobs/pnavarro/2023_EUCANSHARE/biobb_pydo
 input_rot_path = '/shared/scratch/jobs/pnavarro/2023_EUCANSHARE/biobb_pydock/biobb_pydock/test/data/dockser/rotftdock_output.rot'
 
 container_volume_path = '/data'
-container_working_dir = container_volume_path  # Avoid execution in $HOME, tmp files are created in the working dir
+container_working_dir = '/'  # Avoid execution in $HOME, tmp files are created in the working dir
 container_path = 'singularity'
 container_generic_command = 'exec'
 container_image = '/shared/work/NBD_Utilities/pyDock3/3.6.1/nbd_pydock.sif' 
