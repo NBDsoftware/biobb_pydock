@@ -90,7 +90,8 @@ class MakePDB(BiobbObject):
         self.binary_path = properties.get('binary_path', 'pydock3')
 
         # Fix the working directory and the volume path inside the container
-        # PyDock expects the volume path with input and output files to be in the working directory 
+        # PyDock expects the volume path with input and output files to be in the working directory:
+        #   - makePDB tries to find output in relative path "data/docking_name" to the working directory 
         self.container_volume_path = '/data'
         self.container_working_dir = '/'
 
