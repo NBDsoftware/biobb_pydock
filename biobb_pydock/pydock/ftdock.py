@@ -22,7 +22,7 @@ class Ftdock(BiobbObject):
         input_rec_path (str): Prepared receptor PDB file with pydock setup (the largest of the two proteins). File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
         input_lig_path (str): Prepared ligand PDB file with pydock setup (will be rotated and translated). File type: input. `Sample file <>`_. Accepted formats: pdb (edam:format_1476).
         output_ftdock_path (str): File with docking poses expressed as a translation vector and 3 rotation angles. File type: output. `Sample file <>`_. Accepted formats:  (edam:).
-        output_rot_path (str): File containing the transformation matrix for all the docking poses. File type: output. `Sample file <>`_. Accepted formats:  (edam:).
+        output_rot_path (str): File containing the transformation matrices for all the docking poses. File type: output. `Sample file <>`_. Accepted formats:  (edam:).
         properties (dic):
             * **docking_name** (*str*) - ("docking_name") Name for the docking.
             * **binary_path** (*str*) - ("pyDock3") Path to the pyDock executable binary.
@@ -69,7 +69,7 @@ class Ftdock(BiobbObject):
         super().__init__(properties)
         self.locals_var_dict = locals().copy()
 
-        # Properties common to all PyDock BB
+        # Properties common to all PyDock BB - NOTE: docking name should be an internal property - it is not adding value to the user
         self.docking_name = properties.get('docking_name', 'docking_name')
         self.binary_path = properties.get('binary_path', 'pydock3') 
 
@@ -82,7 +82,8 @@ class Ftdock(BiobbObject):
         self.external_input_paths = {'input_rec_path': input_rec_path, 'input_lig_path': input_lig_path}
         self.external_output_paths = {'output_ftdock_path': output_ftdock_path, 'output_rot_path': output_rot_path}
 
-        # Input/Output files (INTERNAL filenames) NOTE: we use here internal filenames to stage files with the correct names - however, later we will rename them to the external ones - thus restart = True will not work in any pydock biobb workflow!!
+        # Input/Output files (INTERNAL filenames) - NOTE: here we are breaking restart = True option, as 'out' files have the INTERNAL filenames, different from the EXTERNAL ones with which they are saved
+        # We need io_dict to contain the INTERNAL filenames, so that the input files are staged with the INTERNAL names (so pyDock can find them) and the output files are found and copied back to the host (pyDock creates them with the INTERNAL names)
         self.io_dict = { 
             'in': { 'input_rec_path': f'{self.docking_name}_rec.pdb', 'input_lig_path': f'{self.docking_name}_lig.pdb' }, 
             'out': { 'output_ftdock_path': f'{self.docking_name}.ftdock', 'output_rot_path': f'{self.docking_name}.rot'} 

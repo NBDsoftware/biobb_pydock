@@ -78,7 +78,7 @@ class Dockser(BiobbObject):
         super().__init__(properties)
         self.locals_var_dict = locals().copy()
 
-        # Properties common to all PyDock BB
+        # Properties common to all PyDock BB - NOTE: docking name should be an internal property - it is not adding value to the user
         self.docking_name = properties.get('docking_name', 'docking_name')
         self.binary_path = properties.get('binary_path', 'pydock3') 
 
@@ -88,7 +88,8 @@ class Dockser(BiobbObject):
                                      'input_rot_path': input_rot_path}
         self.external_output_paths = {'output_ene_path': output_ene_path}
 
-        # Input/Output files (INTERNAL filenames)
+        # Input/Output files (INTERNAL filenames) - NOTE: here we are breaking restart = True option, as 'out' files have the INTERNAL filenames, different from the EXTERNAL ones with which they are saved
+        # We need io_dict to contain the INTERNAL filenames, so that the input files are staged with the INTERNAL names (so pyDock can find them) and the output files are found and copied back to the host (pyDock creates them with the INTERNAL names)
         self.io_dict = { 
             'in': { 'input_rec_path': f'{self.docking_name}_rec.pdb', 'input_rec_H_path': f'{self.docking_name}_rec.pdb.H', 'input_rec_amber_path': f'{self.docking_name}_rec.pdb.amber',
                     'input_lig_path': f'{self.docking_name}_lig.pdb', 'input_lig_H_path': f'{self.docking_name}_lig.pdb.H', 'input_lig_amber_path': f'{self.docking_name}_lig.pdb.amber',

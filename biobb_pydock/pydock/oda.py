@@ -81,7 +81,8 @@ class Oda(BiobbObject):
         self.external_output_paths = {'output_oda_path': output_oda_path, 'output_oda_H_path': output_oda_H_path, 
                                       'output_oda_amber_path': output_oda_amber_path, 'output_oda_tab_path': output_oda_tab_path}
 
-        # Input/Output files (INTERNAL filenames)
+        # Input/Output files (INTERNAL filenames) - NOTE: here we are breaking restart = True option, as 'out' files have the INTERNAL filenames, different from the EXTERNAL ones with which they are saved
+        # We need io_dict to contain the INTERNAL filenames, so that the input files are staged with the INTERNAL names (so pyDock can find them) and the output files are found and copied back to the host (pyDock creates them with the INTERNAL names)
         self.io_dict = { 
             'in':  { 'input_structure_path': f'{self.subunit_name}.pdb' }, 
             'out': { 'output_oda_path': f'{self.subunit_name}.pdb.oda','output_oda_H_path': f'{self.subunit_name}.pdb.oda.H', 

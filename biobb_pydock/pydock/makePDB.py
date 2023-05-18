@@ -85,7 +85,7 @@ class MakePDB(BiobbObject):
         super().__init__(properties)
         self.locals_var_dict = locals().copy()
 
-        # Properties common to all PyDock BB
+        # Properties common to all PyDock BB - NOTE: docking name should be an internal property - it is not adding value to the user
         self.docking_name = properties.get('docking_name', 'docking_name')
         self.binary_path = properties.get('binary_path', 'pydock3')
 
@@ -97,7 +97,7 @@ class MakePDB(BiobbObject):
 
         # Properties specific for BB
         self.rank1 = properties.get('rank1', '1')
-        self.rank2 = properties.get('rank2', '10')
+        self.rank2 = properties.get('rank2', '100')
 
         # Save EXTERNAL filenames (only those that need self.docking_name in their file name)
         self.external_input_paths = {'input_rec_path': input_rec_path, 'input_rec_H_path': input_rec_H_path, 'input_rec_amber_path': input_rec_amber_path, 
@@ -105,7 +105,8 @@ class MakePDB(BiobbObject):
                                      'input_rot_path': input_rot_path, 'input_ene_path': input_ene_path}
         self.external_output_paths = {'output_zip_path': output_zip_path}
 
-        # Input/Output files (INTERNAL filenames)
+        # Input/Output files (INTERNAL filenames) - NOTE: here we are breaking restart = True option, as 'out' files have the INTERNAL filenames, different from the EXTERNAL ones with which they are saved
+        # We need io_dict to contain the INTERNAL filenames, so that the input files are staged with the INTERNAL names (so pyDock can find them) and the output files are found and copied back to the host (pyDock creates them with the INTERNAL names)
         self.io_dict = { 
             'in': { 'input_rec_path': f'{self.docking_name}_rec.pdb', 'input_rec_H_path': f'{self.docking_name}_rec.pdb.H', 'input_rec_amber_path': f'{self.docking_name}_rec.pdb.amber',
                     'input_lig_path': f'{self.docking_name}_lig.pdb', 'input_lig_H_path': f'{self.docking_name}_lig.pdb.H', 'input_lig_amber_path': f'{self.docking_name}_lig.pdb.amber',
@@ -145,7 +146,7 @@ class MakePDB(BiobbObject):
         # Copy files to host
         self.copy_to_host()
 
-        # Zip output files
+        # Zip output files 
         fu.zip_list(zip_file = self.external_output_paths['output_zip_path'], file_list = list(self.io_dict['out'].values()))
 
         # Remove temporal files
@@ -177,6 +178,8 @@ class MakePDB(BiobbObject):
     
     def get_conformations_dict(self) -> Dict[str, str]:
         """Return the output dictionary containing the pdb structure file names of the conformations in the rank1-rank2 range."""
+        
+        # NOTE: this is needed because pyDock will create the output files as: DockingName_ConformationNumber.pdb for each pose in the rank1-rank2 range - we need to know the conformation numbers to find the output file names
 
         # Get the conformations (to use as keys in the output dictionary)
         conformations = get_conformations(self.external_input_paths["input_ene_path"], self.rank1, self.rank2)
